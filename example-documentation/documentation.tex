@@ -1,0 +1,300 @@
+% ============================================================
+%  TERM PROJECT – EXAMPLE DOCUMENTATION
+%  Databases · THGA Bochum
+%
+%  This is a worked example of the *documentation* deliverable.
+%  It shows the expected structure and level of detail. Your own
+%  documentation describes your own application.
+% ============================================================
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{thga-db}
+
+
+\renewcommand{\thgaKurs}{Databases}
+\renewcommand{\thgaDatum}{Summer Term 2026}
+
+\begin{document}
+\thispagestyle{empty}
+\thgaTitel{Pet Adoption Management System}%
+{Club Library: a database-backed lending system}
+
+\begin{infobox}
+\textbf{Author:} Kaddoum Meriem \\
+\textbf{Module:} Introduction to Database Management Systems · THGA Bochum \\
+\textbf{Stack:} PostgreSQL · FastAPI · Docker Compose · tkinter (\texttt{.deb}) \\
+\textbf{Repository:} \url{https://github.com/meryamkaddoum-max/pet-adoption-system}
+\end{infobox}
+
+\tableofcontents
+\vspace{1em}
+
+% ============================================================
+\section{Introduction and motivation}
+% ============================================================
+
+
+Animal shelters and adoption centers often rely on manual processes or simple tools
+such as spreadsheets to manage their data. While this may be sufficient for small
+datasets, it becomes inefficient and error-prone when the amount of data increases
+or when multiple entities and relationships must be handled simultaneously.
+
+The \textbf{Pet Adoption Management System} was developed to address these limitations
+by providing a structured and database-driven solution. The system manages three
+core entities: pets, adopters, and adoptions. These entities are stored in a relational
+database and can be accessed through a REST API.
+
+The main goal of the system is to provide a consistent and reliable way to store,
+retrieve, and manipulate data related to the adoption process. By using a backend
+API, the system ensures that all data operations follow defined rules and constraints.
+
+A graphical user interface (GUI) was implemented using tkinter to allow users to
+interact with the system in a simple and intuitive way. The frontend communicates
+with the backend exclusively via HTTP requests, ensuring a clear separation of
+responsibilities between presentation, logic, and data storage.
+
+\begin{beispielbox}
+\textbf{Usage scenario.}
+A user wants to adopt a pet. First, the system displays all available pets using the
+API. The user selects a pet and provides adopter information. The adoption is then
+recorded, linking the pet with the adopter. The system ensures that the data is
+stored consistently in the database.
+\end{beispielbox}
+% ============================================================
+\section{Data model}
+% ============================================================
+
+
+During the implementation of the system, the data model was extended in order to
+better reflect real-world requirements. Additional attributes were introduced to
+improve usability and data completeness.
+
+\textbf{Extended attributes:}
+\begin{itemize}
+\item Pet: breed, gender, status (e.g. available, adopted)
+\item Adopter: first\_name, last\_name, phone
+\item Adoption: adoption\_date
+\end{itemize}
+
+The system is based on three main entities: \textbf{pets}, \textbf{adopters}, and
+\textbf{adoptions}.
+
+\textbf{Relationships:}
+\begin{itemize}
+\item One adopter can adopt multiple pets over time
+\item Each pet can only be adopted once
+\end{itemize}
+
+This results in two one-to-many relationships:
+\begin{itemize}
+\item adopter (1) -- (N) adoption
+\item pet (1) -- (N) adoption
+\end{itemize}
+
+The \textbf{adoption} entity acts as a linking table between pets and adopters.
+It contains foreign keys referencing both entities and stores additional information
+such as the adoption date.
+
+\subsection{Relational schema}
+
+Based on the conceptual model, the following relational schema was implemented
+(primary keys are underlined, foreign keys are italicized):
+
+\begin{itemize}
+\item \texttt{adopter}(\underline{id}, first\_name, last\_name, email, phone)
+\item \texttt{pet}(\underline{id}, name, species, breed, gender, age, status)
+\item \texttt{adoption}(\underline{id}, \emph{adopter\_id}, \emph{pet\_id}, adoption\_date)
+\end{itemize}
+
+\textbf{Normalisation.}
+
+All tables are designed according to the Third Normal Form (3NF). Each attribute
+depends only on the primary key of its table, and no redundant data is stored.
+Relationships between entities are represented using foreign keys, ensuring
+referential integrity.
+
+% ============================================================
+\section{Database (PostgreSQL)}
+% ============================================================
+
+
+The database is implemented using PostgreSQL and is initialized automatically
+when the Docker container starts. SQL scripts are used to define the schema and
+insert initial test data.
+
+\begin{lstlisting}[language=SQL, caption={schema.sql (excerpt)}]
+
+CREATE TABLE pets (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(120),
+    species VARCHAR(80),
+    breed VARCHAR(120),
+    gender VARCHAR(20),
+    age INTEGER,
+    status VARCHAR(20)
+);
+
+CREATE TABLE adopters (
+    id SERIAL PRIMARY KEY,
+    first_name VARCHAR(120),
+    last_name VARCHAR(120),
+    email VARCHAR(200),
+    phone VARCHAR(50)
+);
+
+CREATE TABLE adoptions (
+    id SERIAL PRIMARY KEY,
+    adoption_date DATE,
+    pet_id INTEGER REFERENCES pets(id),
+    adopter_id INTEGER REFERENCES adopters(id)
+);
+
+\end{lstlisting}
+
+The use of PostgreSQL ensures reliable data storage, transaction safety, and
+support for relational constraints such as foreign keys.
+
+% ============================================================
+\section{REST API (FastAPI)}
+% ============================================================
+
+
+The backend of the system is implemented using FastAPI and acts as the central
+interface between the database and the frontend.
+
+The API provides endpoints to perform CRUD operations on the main entities.
+All database interactions are handled through SQLAlchemy ORM, which maps Python
+objects to database tables.
+
+\textbf{Supported operations:}
+\begin{itemize}
+\item Create, read, update, and delete pets
+\item Create, read, and delete adopters
+\item Create, read, and delete adoptions
+\end{itemize}
+
+\textbf{Example endpoints:}
+
+\begin{tabular}{lll}
+GET & /pets & Retrieve all pets \\
+POST & /pets & Create a new pet \\
+DELETE & /pets/\{id\} & Delete a pet \\
+POST & /adoptions & Create a new adoption \\
+\end{tabular}
+
+\textbf{Validation.}
+
+Pydantic schemas are used to validate incoming data and ensure correct data types.
+This prevents invalid data from being stored in the database.
+
+The API follows a clear separation of concerns: routing defines endpoints, while
+business logic and database access are handled separately.
+
+% ============================================================
+\section{Frontend (tkinter)}
+% ============================================================
+
+
+The frontend is implemented using Python tkinter and provides a graphical user
+interface for interacting with the system.
+
+The application consists of three main tabs:
+
+\begin{itemize}
+\item Pets: create, view, and delete pets
+\item Adopters: manage adopter information
+\item Adoptions: create and manage adoptions
+\end{itemize}
+
+The frontend communicates with the backend using HTTP requests via the Python
+requests library. No direct database access is performed from the frontend.
+
+\textbf{Architecture.}
+
+The system follows a layered architecture:
+\begin{itemize}
+\item Presentation layer: tkinter GUI
+\item Application layer: FastAPI backend
+\item Data layer: PostgreSQL database
+\end{itemize}
+
+\textbf{Implementation challenges.}
+
+A key challenge was ensuring correct handling of the \textbf{status attribute}
+for pets. The frontend had to correctly send user input to the API and display
+the returned values consistently.
+
+Additionally, proper error handling was implemented to display meaningful
+messages to the user in case of API or input errors.
+% ============================================================
+\section{Operation and deployment}
+% ============================================================
+
+
+The application is deployed using Docker Compose, which allows multiple services
+to run together in isolated containers.
+
+The system consists of two main services:
+\begin{itemize}
+\item PostgreSQL database
+\item FastAPI backend
+\end{itemize}
+
+Docker ensures that the application runs in a consistent environment without
+manual installation of dependencies.
+
+\textbf{Deployment steps:}
+\begin{enumerate}
+\item Run \texttt{docker compose up --build}
+\item Wait until the database and API are started
+\item Access the API via \texttt{http://localhost:8000}
+\end{enumerate}
+
+
+
+% ============================================================
+\section{Reflection}
+% ============================================================
+
+
+The project demonstrates the benefits of separating the system into distinct
+layers: database, backend API, and frontend.
+
+This modular architecture allowed each component to be developed and tested
+independently. For example, the API could be tested using HTTP requests before
+integrating it with the frontend.
+
+One major challenge was ensuring consistency between the database schema,
+API models, and frontend input handling. In particular, the handling of the
+status attribute required careful debugging to ensure correct data flow
+through all layers.
+
+Another challenge was setting up the connection between FastAPI and PostgreSQL
+in a Docker environment. Timing issues during container startup required
+additional debugging.
+
+Overall, the project provides a solid foundation for further extensions,
+such as adding authentication, search functionality, or a more advanced UI.
+% ============================================================
+\section*{Sources and reuse}
+% ============================================================
+
+\addcontentsline{toc}{section}{Sources and reuse}
+
+The project was implemented using concepts and code examples from the lecture
+"Introduction to Database Management Systems" (THGA Bochum).
+
+\begin{itemize}
+
+  \item Database schema design and normalization concepts were based on lecture
+        materials (DDL, DML, 3NF).
+
+  \item The structure of the FastAPI application (routers, CRUD operations,
+        database connection) was adapted from lecture examples and exercises.
+
+  \item The Docker Compose setup was based on examples shown in the course
+        (multi-container setup with PostgreSQL and API).
+
+\end{itemize}
+
+\end{document}
