@@ -193,6 +193,5 @@ THGA Bochum
 
 ---
 
-## 📜 License
 
 This project is for educational purposes.
