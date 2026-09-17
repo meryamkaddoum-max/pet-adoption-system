@@ -164,7 +164,7 @@ Tkinter GUI → FastAPI → PostgreSQL
 
 ---
 
-#### 👤 adopters
+####  adopters
 
 | Column     | Type         | Description |
 |------------|-------------|------------|
@@ -176,7 +176,7 @@ Tkinter GUI → FastAPI → PostgreSQL
 
 ---
 
-#### 📦 adoptions
+####  adoptions
 
 | Column        | Type         | Description |
 |---------------|-------------|------------|
